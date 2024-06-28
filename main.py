@@ -1,6 +1,6 @@
 #!/home/pratyaksh/Desktop/testing/bin/python3
 from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
@@ -90,34 +90,34 @@ def main():
             EC.visibility_of_element_located((By.CLASS_NAME, "modal-container"))
         )
         
-        # Ensure the availability table is loaded
-        availability_table = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "div.check-availability-table"))
-        )
+        try:
+            availability_table = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "div.check-availability-table"))
+            )
+            rows = availability_table.find_elements(By.CSS_SELECTOR, "div.unit-row.js-unit-row")
+            data = []
+            for row in rows:
+                unit = row.find_element(By.CSS_SELECTOR, "div.unit-col.unit").text
+                rent = row.find_element(By.CSS_SELECTOR, "div.unit-col.rent").text
+                sq_ft = row.find_element(By.CSS_SELECTOR, "div.unit-col.sqft").text
+                availability = row.find_element(By.CSS_SELECTOR, "div.unit-col.availability").text
+                data.append([unit, rent, sq_ft, availability])
+                logging.debug(f"Unit: {unit}, Rent: {rent}, SqFt: {sq_ft}, Available: {availability}")
 
-        # Fetch all rows in the availability table
-        data = []
-        rows = availability_table.find_elements(By.CSS_SELECTOR, "div.unit-row.js-unit-row")
-        for row in rows:
-            unit = row.find_element(By.CSS_SELECTOR, "div.unit-col.unit").text
-            rent = row.find_element(By.CSS_SELECTOR, "div.unit-col.rent").text
-            sq_ft = row.find_element(By.CSS_SELECTOR, "div.unit-col.sqft").text
-            availability = row.find_element(By.CSS_SELECTOR, "div.unit-col.availability").text
-            data.append([unit, rent, sq_ft, availability])
-            logging.debug(f"Unit: {unit}, Rent: {rent}, SqFt: {sq_ft}, Available: {availability}")
+            old_data = read_from_csv()
+            logging.debug(f"Old data: {old_data}")
+            logging.debug(f"New data: {data[0]}")
+            if old_data != data:
+                logging.debug("Data has changed. Updating the local file...")
+                send_push_notification(os.getenv('USER_KEY'), "New apt Available", f"Unit {data[0][0]} Sq Ft: {data[0][2]} Available: {data[0][3]}")
 
-        old_data = read_from_csv()
-        logging.debug(f"Old data: {old_data}")
-        logging.debug(f"New data: {data[0]}")
-        if old_data != data:
-            logging.debug("Data has changed. Updating the local file...")
-            send_push_notification(os.getenv('USER_KEY'), "New apt Available", f"Unit {data[0][0]} Sq Ft: {data[0][2]} Available: {data[0][3]}")
+                write_to_csv(data)  # Update the CSV file with new data
+            else:
+                logging.debug("Data is up to date. No update needed.")
 
-            write_to_csv(data)  # Update the CSV file with new data
-        else:
-            logging.debug("Data is up to date. No update needed.")
-        # Pause before closing the browser
-        logging.debug("Script complete, exiting..")
+            logging.debug("Script complete, exiting..")
+        except TimeoutException:
+            logging.error("Availability table not found within the timeout period.")
     except Exception as e:
         # Handle any exceptions that occur during the process
         logging.error("Failed to complete the script:", exc_info=True)
