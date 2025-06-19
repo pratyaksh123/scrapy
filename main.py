@@ -20,8 +20,7 @@ def send_push_notification(message: str):
 
 
 def main():
-    scraper = cloudscraper.create_scraper()  # returns a CloudScraper instance
-    # Or: scraper = cloudscraper.CloudScraper()  # CloudScraper inherits from requests.Session
+    scraper = cloudscraper.create_scraper()
     raw_html = scraper.get("https://www.rentrt.com/arlington-vaapartments/randolph-towers/conventional/").text
 
     bs4 = BeautifulSoup(raw_html, "html.parser")
