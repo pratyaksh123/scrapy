@@ -32,8 +32,8 @@ def main():
 
     if studio_button.text != "Get Notified":
         send_push_notification("Studio Apartment is available!")
-    if single_bed_button.text != "Get Notified":
-        send_push_notification("Studio Apartment is available!")
+    # if single_bed_button.text != "Get Notified":
+    #     send_push_notification("1Bd Apartment is available!")
 
 if __name__ == "__main__":
     main()
